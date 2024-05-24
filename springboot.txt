@@ -1,0 +1,405 @@
+create table type (
+id int primary key auto_increment,
+name varchar(30) not null);
+
+create table role (
+id int primary key auto_increment,
+name varchar(30) not null);
+
+create table status (
+id int primary key auto_increment,
+name varchar(30) not null);
+
+create table master (
+id int primary key auto_increment,
+fio varchar(50) not null);
+
+create table client (
+id int primary key auto_increment,
+fio varchar(50) not null);
+
+create table user (
+id int primary key auto_increment,
+fio varchar(50) not null,
+login varchar(25) not null,
+password varchar(25) not null,
+roleId int not null,
+foreign key (roleId) references role(id));
+
+create table request (
+id int primary key auto_increment,
+start date not null,
+typeId int not null,
+model varchar(50) not null,
+desc varchar(100) not null,
+statusId int not null,
+end date,
+masterId int,
+clientId int not null,
+comment varchar(100),
+foreign key (typeId) references type(id),
+foreign key (statusId) references status(id),
+foreign key (masterId) references master(id),
+foreign key (clientId) references client(id));
+
+create table repairParts (
+id int primary key auto_increment,
+name varchar(30) not null,
+requestId int not null,
+foreign key (requestId) references request(id));
+
+---------------------------------------------------------------------------------
+
+
+package application;
+
+import java.net.URL;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.stream.Collectors;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.mysql.cj.jdbc.MysqlDataSource;
+
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
+
+public class MainFormController implements Initializable {
+
+    @FXML
+    private Button b1;
+
+    @FXML
+    private Button b2;
+
+    @FXML
+    private Button b3;
+
+    @FXML
+    private Button b4;
+
+    @FXML
+    private Button b5;
+
+    @FXML
+    private DatePicker t1;
+
+    @FXML
+    private TextField t10;
+
+    @FXML
+    private TextArea t11;
+
+    @FXML
+    private TextArea t12;
+
+    @FXML
+    private ComboBox<String> t2;
+
+    @FXML
+    private TextField t3;
+
+    @FXML
+    private TextArea t4;
+
+    @FXML
+    private ComboBox<String> t5;
+
+    @FXML
+    private DatePicker t6;
+
+    @FXML
+    private ComboBox<String> t7;
+
+    @FXML
+    private ComboBox<String> t8;
+
+    @FXML
+    private ComboBox<String> t9;
+
+    @FXML
+    private TableView<Request> table;
+
+    @FXML
+    private TableColumn<Request, String> с1;
+
+    @FXML
+    private TableColumn<Request, String> с10;
+
+    @FXML
+    private TableColumn<Request, String> с2;
+
+    @FXML
+    private TableColumn<Request, String> с3;
+
+    @FXML
+    private TableColumn<Request, String> с4;
+
+    @FXML
+    private TableColumn<Request, String> с5;
+
+    @FXML
+    private TableColumn<Request, String> с6;
+
+    @FXML
+    private TableColumn<Request, String> с7;
+
+    @FXML
+    private TableColumn<Request, String> с8;
+
+    @FXML
+    private TableColumn<Request, String> с9;
+
+    @FXML
+    void onb1(ActionEvent event) {
+    	if (t1.getValue() != null && !t3.getText().equals("") && !t4.getText().equals("")) {
+    		j.update("insert into request values (null, ?,?,?,?,?,?,?,?,?);", t1.getValue(), t2.getSelectionModel().getSelectedIndex()+1, t3.getText(), t4.getText(), t5.getSelectionModel().getSelectedIndex()+1, t6.getValue() != null? t6.getValue() : null, !t7.getValue().equals("-")? t7.getSelectionModel().getSelectedIndex()+1 : null, t8.getSelectionModel().getSelectedIndex()+1, t12.getText().equals("")? null: t12.getText());
+    	} else {
+    		Alert a = new Alert(AlertType.ERROR);
+    		a.setContentText("заполните все обязательные поля");
+    		a.show();
+    	}
+    	r.clear();
+    	r.addAll(all());
+    	statistics();
+    }
+
+    @FXML
+    void onb2(ActionEvent event) {
+    	if (table.getSelectionModel().getSelectedItem() != null) {
+    		Request req = table.getSelectionModel().getSelectedItem();
+    		j.update("update request set startDate =?, typeID =?,model=?,problemDescryption=?,statusID=?,completionDate=?,masterID=?,clientID=?,comment=? where requestID =?", 
+    				t1.getValue()!=null? t1.getValue(): req.startDate, t2.getSelectionModel().getSelectedIndex()+1, t3.getText().equals("")? req.model:t3.getText(), t4.getText().equals("")? req.problemDescryption:t4.getText(), t5.getSelectionModel().getSelectedIndex()+1, t6.getValue()!=null? t6.getValue() : req.completionDate, t7.getSelectionModel().getSelectedIndex()+1, t8.getSelectionModel().getSelectedIndex()+1, t12.getText().equals("")? req.comment : t12.getText(), req.requestID);
+    	
+    	}
+    	r.clear();
+    	r.addAll(all());
+    	statistics();
+    }
+
+    @FXML
+    void onb3(ActionEvent event) {
+    	Alert a = new Alert(AlertType.CONFIRMATION);
+    	a.setContentText("вы уверены удалить?");
+    	a.showAndWait();
+    	if (a.getResult().getText().equals("OK")) {
+    		if (table.getSelectionModel().getSelectedItem() != null)
+    		j.update("delete from request where requestID = ?", table.getSelectionModel().getSelectedItem().requestID);
+    	}
+    	r.clear();
+    	r.addAll(all());
+    	statistics();
+    }
+    
+    void statistics() {
+    	t11.setText("выполнено " + done() + "\nсреднее время " + avg() + "\n" + counter());
+    }
+    
+    int done() {
+    	int total = 0;
+    	List<Request> req = all();
+    	for (int i = 0; i < req.size(); i++) {
+    		if (req.get(i).statusID == 3) {
+    			total ++;
+    		}
+    	}
+    	return total;
+    }
+    
+    long avg() {
+    	long time = 0;
+    	int total = 0;
+    	List<Request> req = all();
+    	for (int i = 0; i < req.size(); i++) {
+    		if (req.get(i).completionDate!=null) {
+    			total ++;
+    			time += ChronoUnit.DAYS.between(LocalDate.parse(req.get(i).startDate), LocalDate.parse(req.get(i).completionDate));
+    		}
+    	}
+    	time = time/total;
+    	return time;
+    }
+    String result;
+    String counter() {
+    	result = "";
+    	List<Request> req = all();
+    	req.stream().collect(Collectors.groupingBy(rq->rq.problemDescryption, Collectors.counting())).forEach((s,l)->result+=s+l.toString() + "\n");
+    	return result;
+    }
+    
+    @FXML
+    void onb4(ActionEvent event) {
+    	String filter = t9.getValue();
+    	r.clear();
+    	if (filter.equals("все")) {
+    		r.addAll(all());
+    	} else if (filter.equals("по номеру")) {
+    		r.addAll(all().stream().filter(req -> req.requestID == Integer.parseInt(t10.getText())).toList());
+    	} else if (filter.equals("по статусу")) {
+    		r.addAll(all().stream().filter(req -> t5.getItems().get(req.statusID-1).equals(t10.getText())).toList());
+    	}
+    	
+    }
+
+    @FXML
+    void onb5(ActionEvent event) {
+    	try {
+			Stage primaryStage = (Stage) b1.getScene().getWindow();
+			BorderPane root = (BorderPane)FXMLLoader.load(getClass().getResource("Login.fxml"));
+			Scene scene = new Scene(root,400,400);
+			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
+			primaryStage.setScene(scene);
+			primaryStage.show();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+    }
+    JdbcTemplate j;
+    List<Request> all() {
+    	return j.query("select * from request", (r,n)->{return new Request(r.getInt(1), r.getString(2), r.getInt(3), r.getString(4), r.getString(5), r.getInt(6), r.getString(7), r.getInt(8), r.getInt(9), r.getString(10));});
+    }
+    ObservableList<Request> r = FXCollections.observableArrayList();;
+	@Override
+	public void initialize(URL arg0, ResourceBundle arg1) {
+		MysqlDataSource md = new MysqlDataSource();
+    	md.setUser("root");
+    	md.setPassword("");
+    	md.setDatabaseName("dem");
+    	md.setServerName("localhost");
+    	md.setPort(3306);
+    	j = new JdbcTemplate(md);
+    	
+    	ObservableList<String> t = FXCollections.observableArrayList();
+    	t.addAll(j.query("select name from type", (r,n)->{return r.getString(1);}));
+    	t2.setItems(t);
+    	t2.getSelectionModel().select(0);
+    	
+    	ObservableList<String> s = FXCollections.observableArrayList();
+    	s.addAll(j.query("select name from status", (r,n)->{return r.getString(1);}));
+    	t5.setItems(s);
+    	t5.getSelectionModel().select(0);
+    	
+    	ObservableList<String> c = FXCollections.observableArrayList();
+    	c.addAll(j.query("select fio from client", (r,n)->{return r.getString(1);}));
+    	t8.setItems(c);
+    	t8.getSelectionModel().select(0);
+    	
+    	ObservableList<String> f = FXCollections.observableArrayList();
+    	f.addAll("все", "по номеру", "по статусу");
+    	t9.setItems(f);
+    	t9.getSelectionModel().select(0);
+    	
+    	ObservableList<String> m = FXCollections.observableArrayList();
+    	m.addAll(j.query("select fio from master", (r,n)->{return r.getString(1);}));
+    	t7.setItems(m);
+    	t7.getSelectionModel().select(0);
+    	
+    	с1.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().requestID.toString()));
+    	с2.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().startDate.toString()));
+    	с3.setCellValueFactory(d -> new SimpleStringProperty(t2.getItems().get(d.getValue().typeID-1)));
+    	с4.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().model));
+    	с5.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().problemDescryption));
+    	с6.setCellValueFactory(d -> new SimpleStringProperty(t5.getItems().get(d.getValue().statusID-1)));
+    	с7.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().completionDate != null ? d.getValue().completionDate.toString() : "-"));
+    	с8.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().masterID > 0? t7.getItems().get(d.getValue().masterID-1) : "-"));
+    	с9.setCellValueFactory(d -> new SimpleStringProperty(t8.getItems().get(d.getValue().clientID-1)));
+    	с10.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().comment));
+    	
+    	
+    	r.addAll(all());
+    	table.setItems(r);
+    	
+    	statistics();
+    	
+		
+	}
+
+}
+
+
+
+-------------------------------------------
+
+package application;
+
+import java.sql.ResultSet;
+import java.util.List;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.mysql.cj.jdbc.MysqlDataSource;
+
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
+
+public class LoginController {
+
+    @FXML
+    private Button b1;
+
+    @FXML
+    private TextField t1;
+
+    @FXML
+    private TextField t2;
+
+    @FXML
+    void onb1(ActionEvent event) {
+    	MysqlDataSource m = new MysqlDataSource();
+    	m.setUser("root");
+    	m.setPassword("");
+    	m.setDatabaseName("dem");
+    	m.setServerName("localhost");
+    	m.setPort(3306);
+    	JdbcTemplate j = new JdbcTemplate(m);
+
+    	List<Integer> result = j.query("select userID from user where login = '" + t1.getText() + "' and password = '" + t2.getText() + "'", (r,n) -> {return r.getInt(1);});
+    	if (result.size() > 0) {
+    		try {
+    			Stage primaryStage = (Stage) b1.getScene().getWindow();
+    			BorderPane root = (BorderPane)FXMLLoader.load(getClass().getResource("MainForm.fxml"));
+    			Scene scene = new Scene(root,400,400);
+    			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
+    			primaryStage.setScene(scene);
+    			primaryStage.show();
+    		} catch(Exception e) {
+    			e.printStackTrace();
+    		}
+    	} else {
+    		Alert a = new Alert(AlertType.ERROR);
+    		a.setContentText("неверный логин или пароль");
+    		a.show();
+    	}
+    }
+
+}
+
